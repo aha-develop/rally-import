@@ -14,6 +14,12 @@ async function authedRally() {
 
 const SEP = "::";
 
+/**
+ * Aha! Develop filters can only hold a string reference, but rally needs some
+ * more information to load the allowed values. Therefore the filter name is
+ * "packed" with the attribute name and a ref to it's allowed values API
+ * endpoint.
+ */
 function packStateFilter(state: Rally.Attribute) {
   return ["state", state.ElementName, state.AllowedValues?._ref].join(SEP);
 }
@@ -32,6 +38,8 @@ importer.on({ action: "listCandidates" }, async ({ filters, nextPage }) => {
   params.project = filters.project;
   const projectId = rally.idFromRef(filters.project);
 
+  // Find the state filter and apply it. Currently only one will be shown, but
+  // this code would work with many.
   Object.keys(filters)
     .filter((f) => f.startsWith(`state${SEP}`))
     .forEach((filter) => {
@@ -47,6 +55,8 @@ importer.on({ action: "listCandidates" }, async ({ filters, nextPage }) => {
     query.push(filters.query);
   }
 
+  // Rally is picky about the query syntax. You cannot put double brackets
+  // around the query unless it has multiple statements
   if (query.length > 1) {
     params.query = "(" + query.join(" AND ") + ")";
   } else if (query.length > 0) {
@@ -71,6 +81,8 @@ importer.on({ action: "listCandidates" }, async ({ filters, nextPage }) => {
 });
 
 importer.on({ action: "listFilters" }, async () => {
+  // Get the type definiton for Hierarchical Requirement from rally and find the
+  // state field so we can create a filter for it.
   const rally = await authedRally();
   const typedef = await rally.typeDefinition("Hierarchical Requirement");
   const attrs = await rally.typeAttributes(typedef.ObjectUUID);
