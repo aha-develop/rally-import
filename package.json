@@ -16,7 +16,7 @@
     "contributes": {
       "importers": {
         "importer": {
-          "title": "Rally Importer",
+          "title": "Rally Import",
           "entryPoint": "src/importers/rally.ts"
         }
       }

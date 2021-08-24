@@ -1,12 +1,11 @@
+import { IDENTIFIER } from "../extension";
 import { RallyClient } from "../lib/RallyClient";
 
 interface RallyCandidate
   extends Aha.ImportRecord,
     Partial<Rally.HierarchicalRequirementAttributes> {}
 
-const importer = aha.getImporter<RallyCandidate>(
-  "aha-develop.rally-importer.importer"
-);
+const importer = aha.getImporter<RallyCandidate>(`${IDENTIFIER}.importer`);
 
 importer.on({ action: "listCandidates" }, async ({ filters, nextPage }) => {
   const rallyToken = await aha.auth("rally", { useCachedRetry: true });
@@ -36,7 +35,7 @@ importer.on({ action: "listFilters" }, (): Aha.ListFilters => {
   return {
     project: {
       title: "Project",
-      required: false,
+      required: true,
       type: "select",
     },
     iteration: {
