@@ -1,7 +1,7 @@
 {
   "name": "aha-develop.rally-import",
   "description": "Rally Import for Aha! Develop",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "author": "aha-develop",
   "repository": {
     "type": "git",
@@ -12,7 +12,9 @@
     "@types/react": "^16.8.0"
   },
   "ahaExtension": {
-    "cspSources": ["https://rally1.rallydev.com"],
+    "cspSources": [
+      "https://rally1.rallydev.com"
+    ],
     "contributes": {
       "importers": {
         "importer": {
