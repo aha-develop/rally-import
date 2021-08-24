@@ -1,11 +1,9 @@
 export class RallyClient {
   token: string;
   baseUrl: string;
+  wsPath: string = "/slm/webservice/v2.x/";
 
-  constructor(
-    token: string,
-    baseUrl: string = "https://rally1.rallydev.com/slm/webservice/v2.x/"
-  ) {
+  constructor(token: string, baseUrl: string = "https://rally1.rallydev.com") {
     this.token = token;
     this.baseUrl = baseUrl;
   }
@@ -15,6 +13,20 @@ export class RallyClient {
       Authorization: "Bearer " + this.token,
       Accept: "application/json",
     };
+  }
+
+  idFromRef(ref: string) {
+    return ref.split("/").slice(-1)[0];
+  }
+
+  recordUrl(projectId: string, recordId: string) {
+    return [
+      `${this.baseUrl}/#`,
+      `${projectId}d`,
+      "detail",
+      "userstory",
+      recordId,
+    ].join("/");
   }
 
   async user<P extends keyof Rally.UserAttributes>(fetch: P[]) {
@@ -44,6 +56,16 @@ export class RallyClient {
     return response.QueryResult;
   }
 
+  async byRef<T>(ref: string) {
+    const response = await fetch(ref, { headers: this.headers });
+    const object = await response.json();
+
+    const keys = Object.keys(object);
+    if (keys[0] === "QueryResult") return object as T;
+
+    return object[keys[0]] as T;
+  }
+
   async projects() {
     const response = await this.get<Rally.QueryResultResponse<Rally.Project>>(
       "project",
@@ -53,6 +75,38 @@ export class RallyClient {
       }
     );
 
+    return response.QueryResult;
+  }
+
+  async schema(projectId: string) {
+    const response = await fetch(
+      this.baseUrl + `/slm/schema/v2.0/project/${projectId}`,
+      {
+        headers: this.headers,
+      }
+    );
+
+    return await response.json();
+  }
+
+  async typeDefinition(type: string, fetch?: string[]) {
+    const response = await this.get<Rally.QueryResultResponse<Rally.TypeDef>>(
+      "typedefinition",
+      {
+        query: `(Name = "${type}")`,
+        fetch: fetch ? fetch.join(",") : "true",
+      }
+    );
+    return response.QueryResult.Results[0];
+  }
+
+  async typeAttributes(typeDefObjectUUID: string, fetch?: string[]) {
+    const response = await this.get<Rally.QueryResultResponse<Rally.Attribute>>(
+      `typedefinition/${typeDefObjectUUID}/Attributes`,
+      {
+        fetch: fetch ? fetch.join(",") : "true",
+      }
+    );
     return response.QueryResult;
   }
 
@@ -74,7 +128,7 @@ export class RallyClient {
 
   async get<T>(path: string, params = {}) {
     const response = await fetch(
-      this.baseUrl + path + "?" + new URLSearchParams(params),
+      this.baseUrl + this.wsPath + path + "?" + new URLSearchParams(params),
       {
         headers: this.headers,
       }

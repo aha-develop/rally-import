@@ -7,75 +7,122 @@ interface RallyCandidate
 
 const importer = aha.getImporter<RallyCandidate>(`${IDENTIFIER}.importer`);
 
-importer.on({ action: "listCandidates" }, async ({ filters, nextPage }) => {
+async function authedRally() {
   const rallyToken = await aha.auth("rally", { useCachedRetry: true });
-  const rally = new RallyClient(rallyToken.token);
+  return new RallyClient(rallyToken.token);
+}
+
+const SEP = "::";
+
+function packStateFilter(state: Rally.Attribute) {
+  return ["state", state.ElementName, state.AllowedValues?._ref].join(SEP);
+}
+
+function unpackStateFilter(name: string) {
+  const [_, Name, ref] = name.split(SEP);
+  return { Name, ref };
+}
+
+importer.on({ action: "listCandidates" }, async ({ filters, nextPage }) => {
+  const rally = await authedRally();
+
   const params: any = {};
-  if (filters.project) {
-    params.project = filters.project;
+  const query: string[] = [];
+
+  params.project = filters.project;
+  const projectId = rally.idFromRef(filters.project);
+
+  Object.keys(filters)
+    .filter((f) => f.startsWith(`state${SEP}`))
+    .forEach((filter) => {
+      const { Name, ref } = unpackStateFilter(filter);
+      const value = filters[filter];
+
+      if (value && value !== "") {
+        query.push(`(${Name} = "${value}")`);
+      }
+    });
+
+  if (filters.query && filters.query.length > 0) {
+    query.push(filters.query);
   }
-  if (filters.iteration) {
-    params.query = `(Iteration.Name = "${filters.iteration}")`;
+
+  if (query.length > 1) {
+    params.query = "(" + query.join(" AND ") + ")";
+  } else if (query.length > 0) {
+    params.query = query[0];
   }
-  const us = (
-    await rally.hierachicalRequirements(["Name", "Description"], params)
+
+  const results = (
+    await rally.hierachicalRequirements(
+      ["Name", "Description", "ObjectID"],
+      params
+    )
   ).Results;
 
-  const records = us.map((r) => ({
+  const records = results.map((r) => ({
     name: r.Name,
     uniqueId: r._refObjectUUID,
-    url: r._ref,
+    url: rally.recordUrl(projectId, String(r.ObjectID)),
     ...r,
   })) as RallyCandidate[];
 
   return { records, nextPage: null };
 });
 
-importer.on({ action: "listFilters" }, (): Aha.ListFilters => {
-  return {
+importer.on({ action: "listFilters" }, async () => {
+  const rally = await authedRally();
+  const typedef = await rally.typeDefinition("Hierarchical Requirement");
+  const attrs = await rally.typeAttributes(typedef.ObjectUUID);
+  const stateAttr = attrs.Results.find((r) => r.AttributeType === "STATE");
+
+  const filters: Aha.ListFilters = {
     project: {
       title: "Project",
       required: true,
       type: "select",
     },
-    iteration: {
-      title: "Iteration",
-      required: false,
-      type: "autocomplete",
-    },
   };
+
+  if (stateAttr) {
+    filters[packStateFilter(stateAttr)] = {
+      title: stateAttr.Name,
+      required: false,
+      type: "select",
+    };
+  }
+
+  filters.query = {
+    title: "Query",
+    required: false,
+    type: "text",
+  };
+
+  return filters;
 });
 
 importer.on({ action: "filterValues" }, async ({ filterName, filters }) => {
-  const rallyToken = await aha.auth("rally", { useCachedRetry: true });
-  const rally = new RallyClient(rallyToken.token);
+  const rally = await authedRally();
 
   switch (filterName) {
     case "project":
       const projects = (await rally.projects()).Results;
       return projects.map((p) => ({ text: p.Name, value: p._ref }));
+  }
 
-    case "iteration":
-      const params: any = {};
-      if (filters.project) {
-        params.project = filters.project;
-      }
-
-      const iterations = (await rally.iterations(["Name"], params)).Results;
-      return iterations.map((i) => ({ text: i.Name, value: i._refObjectName }));
+  if (filterName.startsWith(`state${SEP}`)) {
+    const { ref } = unpackStateFilter(filterName);
+    const allowedValues = await rally.byRef<
+      Rally.QueryResultResponse<Rally.AllowedAttributeValue>
+    >(ref);
+    return allowedValues.QueryResult.Results.map((allowedValue) => ({
+      text: allowedValue.LocalizedStringValue,
+      value: allowedValue.StringValue,
+    }));
   }
 
   return [];
 });
-
-//Optional
-//importer.on({ action: "renderRecord" }, ({ record, onUnmounted }, { identifier, settings }) => {
-//  onUnmounted(() => {
-//    console.log("Un-mounting component for", record.identifier);
-//  });
-//
-//  return `${record.identifier} ${record.name}`;
-//});
 
 importer.on({ action: "importRecord" }, async ({ importRecord, ahaRecord }) => {
   ahaRecord.description = importRecord.Description;

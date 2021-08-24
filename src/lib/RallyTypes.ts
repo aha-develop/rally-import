@@ -12,6 +12,7 @@ declare namespace Rally {
     _refObjectName: string;
     _type: "Project";
     Name: string;
+    ObjectID: string;
   }
 
   interface QueryResultResponse<T> {
@@ -121,43 +122,88 @@ declare namespace Rally {
     ObjectUUID: string;
     VersionId: string;
     Description: string;
-    DisplayColor: string;
-    Expedite: boolean;
     FormattedID: string;
-    LastUpdateDate: Date;
-    LatestDiscussionAgeInMinutes: null;
     Name: string;
-    Notes: string;
-    Owner: null;
-    Ready: boolean;
-    FlowStateChangedDate: Date;
-    LastBuild: null;
-    LastRun: null;
-    PassingTestCaseCount: number;
-    ScheduleState: string;
-    ScheduleStatePrefix: string;
-    TestCaseCount: number;
-    Package: null;
-    AcceptedDate: null;
-    Blocked: boolean;
-    BlockedReason: null;
-    Blocker: null;
-    DefectStatus: null;
-    DirectChildrenCount: number;
-    DragAndDropRank: string;
-    HasParent: boolean;
-    InProgressDate: null;
-    Iteration: null;
-    Parent: null;
-    PlanEstimate: number;
-    Recycled: boolean;
-    Release: null;
-    TaskActualTotal: number;
-    TaskEstimateTotal: number;
-    TaskRemainingTotal: number;
-    TaskStatus: null;
-    TestCaseStatus: null;
-    UnifiedParent: null;
-    c_AnimalVegetableMineral: null;
+  }
+
+  interface TypeDef extends RallyObject {
+    CreationDate: Date;
+    _CreatedAt: string;
+    ObjectID: number;
+    ObjectUUID: string;
+    VersionId: string;
+    Subscription: RallyObject;
+    Workspace: RallyObject;
+    Abstract: boolean;
+    Copyable: boolean;
+    Creatable: boolean;
+    Deletable: boolean;
+    DisplayName: string;
+    ElementName: string;
+    IDPrefix: string;
+    Name: string;
+    Note: string;
+    Ordinal: number;
+    Parent: RallyObject;
+    Queryable: boolean;
+    ReadOnly: boolean;
+    Restorable: boolean;
+    RevisionHistory: RallyObject;
+    TypePath: string;
+    UserListable: boolean;
+  }
+  interface Attribute extends RallyObject {
+    CreationDate: Date;
+    _CreatedAt: string;
+    ObjectID: number;
+    ObjectUUID: string;
+    VersionId: string;
+    Subscription: null;
+    Workspace: null;
+    AllowedQueryOperators: RallyPartialList;
+    AllowedValueType: null;
+    AllowedValues: RallyPartialList;
+    AttributeType: string;
+    Constrained: boolean;
+    Custom: boolean;
+    DetailedType: null;
+    ElementName: string;
+    Filterable: boolean;
+    Hidden: boolean;
+    Hideable: boolean;
+    MaxFractionalDigits: number;
+    MaxLength: number;
+    Name: string;
+    Note: string;
+    Owned: boolean;
+    ReadOnly: boolean;
+    RealAttributeType: string;
+    Required: boolean;
+    Sortable: boolean;
+    SystemRequired: boolean;
+    Type: string;
+    TypeDefinition: RallyObject;
+    VisibleOnlyToAdmins: boolean;
+  }
+
+  interface RallyPartialList {
+    _rallyAPIMajor: string;
+    _rallyAPIMinor: string;
+    _ref: string;
+    _type: string;
+    Count: number;
+  }
+
+  interface AllowedAttributeValue extends RallyObject {
+    CreationDate: null;
+    ObjectID: null;
+    ObjectUUID: string;
+    VersionId: string;
+    AttributeDefinition: RallyObject;
+    IntegerValue: null;
+    LocalizedStringValue: string;
+    StringValue: string;
+    ValueIndex: null;
+    _type: "AllowedAttributeValue";
   }
 }
