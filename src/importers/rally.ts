@@ -125,10 +125,9 @@ importer.on({ action: "filterValues" }, async ({ filterName, filters }) => {
 
   if (filterName.startsWith(`state${SEP}`)) {
     const { ref } = unpackStateFilter(filterName);
-    const allowedValues = await rally.byRef<
-      Rally.QueryResultResponse<Rally.AllowedAttributeValue>
-    >(ref);
-    return allowedValues.QueryResult.Results.map((allowedValue) => ({
+    const allowedValues = await rally.query<Rally.AllowedAttributeValue>(ref);
+
+    return allowedValues.Results.map((allowedValue) => ({
       text: allowedValue.LocalizedStringValue,
       value: allowedValue.StringValue,
     }));

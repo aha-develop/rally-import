@@ -1,3 +1,5 @@
+class QueryResultError extends Error {}
+
 export class RallyClient {
   token: string;
   baseUrl: string;
@@ -43,39 +45,20 @@ export class RallyClient {
   async hierachicalRequirements<
     P extends keyof Rally.HierarchicalRequirementAttributes
   >(fetch: P[], params: object = {}) {
-    const response = await this.get<
-      Rally.QueryResultResponse<
-        Rally.HierarchicalRequirement &
-          Pick<Rally.HierarchicalRequirementAttributes, P>
-      >
+    return await this.query<
+      Rally.HierarchicalRequirement &
+        Pick<Rally.HierarchicalRequirementAttributes, P>
     >("hierarchicalrequirement", {
       fetch: fetch.join(","),
       ...params,
     });
-
-    return response.QueryResult;
-  }
-
-  async byRef<T>(ref: string) {
-    const response = await fetch(ref, { headers: this.headers });
-    const object = await response.json();
-
-    const keys = Object.keys(object);
-    if (keys[0] === "QueryResult") return object as T;
-
-    return object[keys[0]] as T;
   }
 
   async projects() {
-    const response = await this.get<Rally.QueryResultResponse<Rally.Project>>(
-      "project",
-      {
-        query: "",
-        fetch: "Name",
-      }
-    );
-
-    return response.QueryResult;
+    return await this.query<Rally.Project>("project", {
+      query: "",
+      fetch: "Name",
+    });
   }
 
   async schema(projectId: string) {
@@ -90,50 +73,56 @@ export class RallyClient {
   }
 
   async typeDefinition(type: string, fetch?: string[]) {
-    const response = await this.get<Rally.QueryResultResponse<Rally.TypeDef>>(
-      "typedefinition",
-      {
-        query: `(Name = "${type}")`,
-        fetch: fetch ? fetch.join(",") : "true",
-      }
-    );
-    return response.QueryResult.Results[0];
+    const response = await this.query<Rally.TypeDef>("typedefinition", {
+      query: `(Name = "${type}")`,
+      fetch: fetch ? fetch.join(",") : "true",
+    });
+    return response.Results[0];
   }
 
   async typeAttributes(typeDefObjectUUID: string, fetch?: string[]) {
-    const response = await this.get<Rally.QueryResultResponse<Rally.Attribute>>(
+    return await this.query<Rally.Attribute>(
       `typedefinition/${typeDefObjectUUID}/Attributes`,
       {
         fetch: fetch ? fetch.join(",") : "true",
         pagesize: 200,
       }
     );
-    return response.QueryResult;
   }
 
   async iterations<P extends keyof Rally.IterationAttributes>(
     fetch: P[],
     params: object = {}
   ) {
-    const response = await this.get<
-      Rally.QueryResultResponse<
-        Rally.Iteration & Pick<Rally.IterationAttributes, P>
-      >
+    return await this.query<
+      Rally.Iteration & Pick<Rally.IterationAttributes, P>
     >("iteration", {
       fetch: fetch.join(","),
       ...params,
     });
+  }
 
-    return response.QueryResult;
+  async query<T>(path: string, params = {}) {
+    const { QueryResult } = await this.get<Rally.QueryResultResponse<T>>(
+      path,
+      params
+    );
+
+    if (QueryResult.Errors.length > 0) {
+      throw new aha.ConfigError(QueryResult.Errors.join(", "));
+    }
+
+    return QueryResult;
   }
 
   async get<T>(path: string, params = {}) {
-    const response = await fetch(
-      this.baseUrl + this.wsPath + path + "?" + new URLSearchParams(params),
-      {
-        headers: this.headers,
-      }
-    );
+    const url = path.includes(this.baseUrl)
+      ? path
+      : this.baseUrl + this.wsPath + path;
+
+    const response = await fetch(url + "?" + new URLSearchParams(params), {
+      headers: this.headers,
+    });
 
     return (await response.json()) as T;
   }
