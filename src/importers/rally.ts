@@ -65,13 +65,14 @@ importer.on({ action: "listCandidates" }, async ({ filters, nextPage }) => {
 
   const results = (
     await rally.hierachicalRequirements(
-      ["Name", "Description", "ObjectID"],
+      ["Name", "Description", "ObjectID", "FormattedID"],
       params
     )
   ).Results;
 
   const records = results.map((r) => ({
     name: r.Name,
+    identifier: r.FormattedID,
     uniqueId: r._refObjectUUID,
     url: rally.recordUrl(projectId, String(r.ObjectID)),
     ...r,

@@ -105,6 +105,7 @@ export class RallyClient {
       `typedefinition/${typeDefObjectUUID}/Attributes`,
       {
         fetch: fetch ? fetch.join(",") : "true",
+        pagesize: 200,
       }
     );
     return response.QueryResult;
