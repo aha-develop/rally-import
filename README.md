@@ -1,6 +1,6 @@
 # Rally Import
 
-This [Aha! Develop](https://www.aha.io/develop/overview) extenson provides a Rally importer for Aha! Develop.
+This [Aha! Develop](https://www.aha.io/develop/overview) extenson provides a Rally importer for Aha! Develop. It can import all Hierarchical Requirement records, such as User Story, Task, Defect etc. and it will bring over the title and description from the imported record.
 
 It provides the `aha-develop.rally-import.importer` [importer contribution]().
 
